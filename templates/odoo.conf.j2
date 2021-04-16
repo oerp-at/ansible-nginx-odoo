@@ -1,0 +1,95 @@
+upstream {{ instance | mandatory }} {
+    server {{ backend | mandatory }}:{{ backend_port | mandatory }};
+}
+
+{% if odoo_workers > 0 %}
+upstream {{ instance | mandatory }}-longpolling {
+    server {{ backend | mandatory }}:{{ backend_port_longpolling | mandatory }};
+}
+{% endif %}
+
+{% if ssl is defined and ssl %}
+{% for i in forwards %}
+server {
+    server_name {{ i.forward.src }};
+    return 301 https://{{ i.forward.dest }}$request_uri;
+}
+{% endfor %}
+{% endif %}
+
+{% if ssl is undefined or not ssl %}
+{% for i in forwards %}
+server {
+    server_name {{ i.forward.src }};
+    return 301 http://{{ i.forward.dest }}$request_uri;
+}
+{% endfor %}
+{% endif %}
+
+server {
+    {% if ssl is undefined or not ssl %}
+    listen 80;
+    {% endif %}
+    
+    server_name {{ frontend | mandatory }}
+        {% for alias in aliases %}
+        {{ alias }}
+        {% endfor %}    
+        ;
+
+    access_log /var/log/nginx/{{ instance | mandatory }}.access.log;
+    error_log /var/log/nginx/{{ instance | mandatory }}.error.log;
+
+    # defaults
+    client_max_body_size {{ client_max_body_size | mandatory }};
+
+    # proxy timeouts
+    proxy_read_timeout 720s;
+    proxy_connect_timeout 720s;
+    proxy_send_timeout 720s;
+
+    # proxy headers
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    
+    # check for secure country
+    #if ($secure_country = no) {
+    #    return 444;
+    #}
+
+    location / {
+        proxy_redirect off;
+        proxy_pass http://{{ instance | mandatory }};
+    }
+
+    {% if odoo_workers > 0 %}
+    location /longpolling {
+        proxy_pass http://{{ instance | mandatory }}-longpolling;
+    }
+    {% endif %}
+
+    location ~* /web/static/ {
+        proxy_cache_valid 200 90m;
+        proxy_buffering on;
+        expires 864000;
+        proxy_pass http://{{ instance | mandatory }};
+    }
+
+    {% if couchdb is defined %}
+    location /couchdb {
+        rewrite /couchdb/(.*) /$1 break;
+        proxy_pass http://{{ couchdb }}:5984;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+    {% endif %}
+
+    # gzip
+    gzip_types text/css text/less text/plain text/xml application/xml application/json application/javascript;
+    gzip on;
+}

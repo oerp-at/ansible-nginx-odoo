@@ -1,0 +1,11 @@
+---
+# defaults file for nginx-odoo
+
+backend_port: 8069
+backend_port_longpolling: 8072
+odoo_workers: 2
+client_max_body_size: 16M
+admin_email: admin@funet.at
+
+aliases: []
+forwards: []

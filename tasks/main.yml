@@ -1,0 +1,41 @@
+---
+# tasks file for nginx-odoo
+
+- name: setup odoo nginx config
+  template:
+    src: "templates/odoo.conf.j2"
+    dest: "/etc/nginx/sites-available/100-{{ instance }}"
+
+- name: enable odoo
+  file:
+    src: "/etc/nginx/sites-available/100-{{ instance }}"
+    dest: "/etc/nginx/sites-enabled/100-{{ instance }}"
+    state: link
+
+- name: prepare domains
+  set_fact:
+    certbot_domains: "{{ [ frontend ] + aliases }}"
+
+- name: prepare domain param
+  set_fact:
+    certbot_domain_param: "{{ certbot_domains | join(',') }}"    
+
+- name: add cert
+  shell: certbot --nginx -m {{ admin_mail }} --redirect -n --agree-tos -d {{ certbot_domain_param }}
+  when: ssl is defined and ssl
+
+- name: add cert
+  shell: certbot --nginx -m {{ admin_mail }} --no-redirect -n --agree-tos -d {{ certbot_domain_param }}
+  when: ssl is not defined or not ssl
+
+- name: change http to http2
+  lineinfile:
+    path: "/etc/nginx/sites-available/100-{{ instance }}"
+    state: present
+    regexp: '^    listen 443 ssl; # managed by Certbot$'
+    line: '    listen 443 ssl http2; # managed by Certbot'
+
+- name: reload nginx
+  systemd:
+    name: nginx
+    state: reloaded
