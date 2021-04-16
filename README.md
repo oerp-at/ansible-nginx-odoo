@@ -1,5 +1,5 @@
-Role Name
-=========
+nginx-odoo
+==========
 
 Create an ngnix config for an Odoo server
 
