@@ -21,11 +21,11 @@
     certbot_domain_param: "{{ certbot_domains | join(',') }}"    
 
 - name: add cert
-  shell: certbot --nginx -m {{ admin_mail }} --redirect -n --agree-tos -d {{ certbot_domain_param }}
+  shell: certbot --nginx -m {{ admin_mail }} --expand --redirect -n --agree-tos -d {{ certbot_domain_param }}
   when: ssl is defined and ssl
 
 - name: add cert
-  shell: certbot --nginx -m {{ admin_mail }} --no-redirect -n --agree-tos -d {{ certbot_domain_param }}
+  shell: certbot --nginx -m {{ admin_mail }} --expand --no-redirect -n --agree-tos -d {{ certbot_domain_param }}
   when: ssl is not defined or not ssl
 
 - name: change http to http2
