@@ -30,6 +30,13 @@ server {
     {% if ssl is undefined or not ssl %}
     listen 80;
     {% endif %}
+
+    {% if allowed_networks is defined %}
+    {% for allowed_network in allowed_networks %}
+    allow {{ allowed_network }};    
+    {% endfor %}
+    deny all;
+    {% endif %}
     
     server_name {{ frontend | mandatory }}
         {% for alias in aliases %}

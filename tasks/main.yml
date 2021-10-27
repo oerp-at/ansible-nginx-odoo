@@ -22,11 +22,19 @@
 
 - name: add cert
   shell: certbot --nginx -m {{ admin_mail }} --expand --redirect -n --agree-tos -d {{ certbot_domain_param }}
+<<<<<<< HEAD
   when: (not ignore_ssl is defined or not ignore_ssl) and ssl is defined and ssl
 
 - name: add cert
   shell: certbot --nginx -m {{ admin_mail }} --expand --no-redirect -n --agree-tos -d {{ certbot_domain_param }}
   when: (not ignore_ssl is defined or not ignore_ssl) and (ssl is not defined or not ssl)
+=======
+  when: ssl is defined and ssl
+
+- name: add cert
+  shell: certbot --nginx -m {{ admin_mail }} --expand --no-redirect -n --agree-tos -d {{ certbot_domain_param }}
+  when: ssl is not defined or not ssl
+>>>>>>> 2b5db586730be8e5c15ae981a10a7ddd062b7301
 
 - name: change http to http2
   lineinfile:
